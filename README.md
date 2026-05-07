@@ -12,7 +12,7 @@ AI agents are starting to buy tools, storage, compute, data, and subscriptions f
 
 AgentVault uses two 0G components:
 
-- 0G Storage: stores each agent decision as an immutable memory snapshot using `@0gfoundation/0g-storage-ts-sdk`, `Indexer`, and `MemData`.
+- 0G Storage: stores each agent decision as an immutable memory snapshot using the browser build of `@0gfoundation/0g-storage-ts-sdk`, `Indexer`, and wallet signing.
 - 0G Chain: stores the 0G Storage root and storage transaction hash in `AgentLedger.sol`, giving judges an explorer-verifiable activity trail.
 
 Mainnet defaults follow the 0G docs:
@@ -46,52 +46,47 @@ npm run dev
 
 Open `http://127.0.0.1:5173`.
 
-Without `ZEROG_PRIVATE_KEY`, the API runs in preview mode and returns deterministic local hashes. Set `ZEROG_PRIVATE_KEY` to perform live 0G Storage uploads.
+No private key is required in `.env`. All live 0G actions use the connected browser wallet.
 
 ## Live 0G Submission Flow
 
-1. Add a funded 0G mainnet private key to `.env`.
+1. Use a funded 0G mainnet wallet in MetaMask, Rabby, OKX Wallet, or another EVM wallet.
 
-```bash
-ZEROG_PRIVATE_KEY=0x...
-ZEROG_RPC_URL=https://evmrpc.0g.ai
-ZEROG_INDEXER_RPC=https://indexer-storage-turbo.0g.ai
-ZEROG_EXPLORER=https://chainscan.0g.ai
-```
-
-2. Deploy the audit contract.
-
-```bash
-npm run deploy:0g
-```
-
-3. Copy the deployed address into `.env`.
-
-```bash
-VITE_AGENT_LEDGER_ADDRESS=0x...
-```
-
-4. Start the app.
+2. Start the app.
 
 ```bash
 npm run dev
 ```
 
-5. In the app:
+3. In the app:
 
 - Connect wallet on 0G Mainnet.
+- Click `Deploy Ledger` to deploy `AgentLedger.sol` with a wallet confirmation.
 - Adjust the agent policy or invoice.
-- Upload the memory snapshot to 0G Storage.
-- Record the storage root on 0G Chain.
+- Click `Upload` to store the memory snapshot on 0G Storage with a wallet confirmation.
+- Click `Record on 0G Chain` to anchor the storage root in the ledger contract.
 - Use the explorer links as the required proof.
+
+4. Optional: if you already deployed `AgentLedger`, add the address to `.env`.
+
+```bash
+VITE_AGENT_LEDGER_ADDRESS=0x...
+```
+
+The app also saves a newly deployed ledger address in browser local storage for the next refresh.
+
+## Security Model
+
+- No private key is stored in the repository.
+- No private key is required in `.env`.
+- Contract deployment, 0G Storage upload, and ledger recording all use browser wallet confirmations.
+- Use a fresh hackathon wallet with a small amount of 0G gas for demos.
 
 ## Useful Commands
 
 ```bash
 npm run build
 npm run contract:compile
-npm run upload:sample
-npm run deploy:0g
 ```
 
 ## Submission Checklist

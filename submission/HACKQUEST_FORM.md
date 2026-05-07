@@ -33,7 +33,7 @@ TODO: paste deployed frontend URL.
 
 ## 0G Mainnet Contract Address
 
-TODO: paste `AgentLedger` address after `npm run deploy:0g`.
+TODO: paste the `AgentLedger` address shown after clicking `Deploy Ledger` in the app.
 
 ## 0G Explorer Link
 
@@ -57,4 +57,4 @@ cp .env.example .env
 npm run dev
 ```
 
-Live 0G mode requires `ZEROG_PRIVATE_KEY` for Storage uploads and `VITE_AGENT_LEDGER_ADDRESS` after deploying the contract.
+Live 0G mode uses browser wallet confirmations. No private key is required in `.env`.

@@ -55,3 +55,11 @@ export function writeArtifact(compiled: CompiledContract): string {
   fs.writeFileSync(artifactPath, JSON.stringify(compiled, null, 2));
   return artifactPath;
 }
+
+export function writeFrontendArtifact(compiled: CompiledContract): string {
+  const artifactDir = path.resolve('src', 'generated');
+  fs.mkdirSync(artifactDir, { recursive: true });
+  const artifactPath = path.join(artifactDir, 'AgentLedger.json');
+  fs.writeFileSync(artifactPath, JSON.stringify(compiled, null, 2));
+  return artifactPath;
+}

@@ -1,37 +1,16 @@
+import type { InterfaceAbi } from 'ethers';
+import agentLedgerArtifact from '../generated/AgentLedger.json';
+
 export const CHAIN_ID = Number(import.meta.env.VITE_CHAIN_ID ?? '16661');
 export const CHAIN_NAME = import.meta.env.VITE_CHAIN_NAME ?? '0G Mainnet';
 export const RPC_URL = import.meta.env.VITE_RPC_URL ?? 'https://evmrpc.0g.ai';
+export const INDEXER_RPC =
+  import.meta.env.VITE_ZEROG_INDEXER_RPC ?? 'https://indexer-storage-turbo.0g.ai';
 export const BLOCK_EXPLORER = import.meta.env.VITE_BLOCK_EXPLORER ?? 'https://chainscan.0g.ai';
 export const AGENT_LEDGER_ADDRESS = import.meta.env.VITE_AGENT_LEDGER_ADDRESS ?? '';
 
-export const agentLedgerAbi = [
-  {
-    inputs: [
-      { internalType: 'string', name: 'agentId', type: 'string' },
-      { internalType: 'bytes32', name: 'profileRoot', type: 'bytes32' },
-      { internalType: 'string', name: 'profileTxHash', type: 'string' }
-    ],
-    name: 'registerAgent',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function'
-  },
-  {
-    inputs: [
-      { internalType: 'string', name: 'agentId', type: 'string' },
-      { internalType: 'bytes32', name: 'storageRoot', type: 'bytes32' },
-      { internalType: 'string', name: 'storageTxHash', type: 'string' },
-      { internalType: 'string', name: 'vendor', type: 'string' },
-      { internalType: 'uint256', name: 'amountCents', type: 'uint256' },
-      { internalType: 'bool', name: 'approved', type: 'bool' },
-      { internalType: 'string', name: 'memo', type: 'string' }
-    ],
-    name: 'recordDecision',
-    outputs: [{ internalType: 'uint256', name: 'id', type: 'uint256' }],
-    stateMutability: 'nonpayable',
-    type: 'function'
-  }
-] as const;
+export const agentLedgerAbi = agentLedgerArtifact.abi as InterfaceAbi;
+export const agentLedgerBytecode = agentLedgerArtifact.bytecode;
 
 export async function request0GNetwork() {
   if (!window.ethereum) {

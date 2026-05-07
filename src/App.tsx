@@ -13,12 +13,13 @@ import {
   Wallet,
   X
 } from 'lucide-react';
-import { BrowserProvider, Contract } from 'ethers';
+import { BrowserProvider, Contract, ContractFactory } from 'ethers';
 import {
   AGENT_LEDGER_ADDRESS,
   BLOCK_EXPLORER,
   CHAIN_NAME,
   agentLedgerAbi,
+  agentLedgerBytecode,
   request0GNetwork
 } from './lib/chain';
 import {
@@ -31,14 +32,7 @@ import {
   evaluateInvoice,
   toAmountCents
 } from './lib/agent';
-
-type UploadResult = {
-  mode: 'preview' | '0g-storage';
-  rootHash: string;
-  txHash: string;
-  explorerUrl: string;
-  bytes: number;
-};
+import { UploadResult, uploadAgentMemory } from './lib/storage';
 
 type ChainProof = {
   txHash: string;
@@ -53,9 +47,14 @@ function App() {
   const [policy, setPolicy] = useState<Policy>(defaultPolicy);
   const [invoice, setInvoice] = useState<Invoice>(defaultInvoice);
   const [wallet, setWallet] = useState('');
+  const [ledgerAddress, setLedgerAddress] = useState(
+    () => AGENT_LEDGER_ADDRESS || window.localStorage.getItem('agentvault-ledger-address') || ''
+  );
+  const [deployState, setDeployState] = useState<StepState>(ledgerAddress ? 'done' : 'idle');
   const [uploadState, setUploadState] = useState<StepState>('idle');
   const [chainState, setChainState] = useState<StepState>('idle');
   const [upload, setUpload] = useState<UploadResult | null>(null);
+  const [deployProof, setDeployProof] = useState<ChainProof | null>(null);
   const [chainProof, setChainProof] = useState<ChainProof | null>(null);
   const [error, setError] = useState('');
 
@@ -83,26 +82,61 @@ function App() {
 
   async function uploadMemory() {
     setError('');
+
+    if (!window.ethereum) {
+      setError('MetaMask or another EVM wallet is required.');
+      return;
+    }
+
     setUploadState('working');
 
     try {
-      const response = await fetch('/api/upload-memory', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(memory)
-      });
-
-      const body = await response.json();
-
-      if (!response.ok) {
-        throw new Error(body.error ?? '0G Storage upload failed.');
-      }
-
-      setUpload(body);
+      await request0GNetwork();
+      const provider = new BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      setWallet(await signer.getAddress());
+      const result = await uploadAgentMemory(memory, signer);
+      setUpload(result);
       setUploadState('done');
     } catch (caught) {
       setUploadState('error');
       setError(caught instanceof Error ? caught.message : '0G Storage upload failed.');
+    }
+  }
+
+  async function deployLedger() {
+    setError('');
+
+    if (!window.ethereum) {
+      setError('MetaMask or another EVM wallet is required.');
+      return;
+    }
+
+    setDeployState('working');
+
+    try {
+      await request0GNetwork();
+      const provider = new BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      setWallet(await signer.getAddress());
+      const factory = new ContractFactory(agentLedgerAbi, agentLedgerBytecode, signer);
+      const contract = await factory.deploy();
+      const deploymentTx = contract.deploymentTransaction();
+      await contract.waitForDeployment();
+      const address = await contract.getAddress();
+      const receipt = await deploymentTx?.wait();
+      const txHash = receipt?.hash ?? deploymentTx?.hash ?? '';
+
+      setLedgerAddress(address);
+      window.localStorage.setItem('agentvault-ledger-address', address);
+      setDeployProof({
+        txHash,
+        explorerUrl: txHash ? `${BLOCK_EXPLORER}/tx/${txHash}` : `${BLOCK_EXPLORER}/address/${address}`
+      });
+      setDeployState('done');
+    } catch (caught) {
+      setDeployState('error');
+      setError(caught instanceof Error ? caught.message : 'Ledger deployment failed.');
     }
   }
 
@@ -114,8 +148,8 @@ function App() {
       return;
     }
 
-    if (!AGENT_LEDGER_ADDRESS) {
-      setError('Set VITE_AGENT_LEDGER_ADDRESS after deploying AgentLedger.');
+    if (!ledgerAddress) {
+      setError('Deploy AgentLedger with your wallet before writing the chain proof.');
       return;
     }
 
@@ -130,7 +164,8 @@ function App() {
       await request0GNetwork();
       const provider = new BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
-      const contract = new Contract(AGENT_LEDGER_ADDRESS, agentLedgerAbi, signer);
+      setWallet(await signer.getAddress());
+      const contract = new Contract(ledgerAddress, agentLedgerAbi, signer);
       const tx = await contract.recordDecision(
         agentId,
         upload.rootHash,
@@ -362,9 +397,16 @@ function App() {
             <div className="metrics">
               <Metric label="Remaining budget" value={`$${remainingBudget.toLocaleString()}`} />
               <Metric label="Storage mode" value={upload?.mode ?? 'pending'} />
-              <Metric label="Bytes" value={upload ? upload.bytes.toLocaleString() : '0'} />
+              <Metric label="Ledger" value={ledgerAddress ? shorten(ledgerAddress) : 'not deployed'} />
             </div>
 
+            <ProofRow
+              icon={<ShieldCheck size={18} />}
+              label="Ledger contract"
+              value={ledgerAddress}
+              state={deployState}
+              href={ledgerAddress ? `${BLOCK_EXPLORER}/address/${ledgerAddress}` : deployProof?.explorerUrl}
+            />
             <ProofRow
               icon={<Database size={18} />}
               label="Storage root"
@@ -387,6 +429,12 @@ function App() {
               href={chainProof?.explorerUrl}
             />
 
+            {!ledgerAddress && (
+              <button className="primary-action" onClick={deployLedger} disabled={deployState === 'working'}>
+                {deployState === 'working' ? <Loader2 className="spin" size={18} /> : <ShieldCheck size={18} />}
+                Deploy Ledger
+              </button>
+            )}
             <button className="primary-action" onClick={recordOnChain} disabled={chainState === 'working'}>
               {chainState === 'working' ? <Loader2 className="spin" size={18} /> : <ShieldCheck size={18} />}
               Record on 0G Chain

@@ -23,6 +23,10 @@ Show the incoming invoice. Use `0G Storage Credits` for the winning demo path. P
 
 ## 1:25-2:00
 
+Click Deploy Ledger if the contract is not deployed yet. Show the wallet confirmation and the contract explorer link.
+
+## 2:00-2:30
+
 Click Upload. Show:
 
 - 0G Storage root
@@ -31,7 +35,7 @@ Click Upload. Show:
 
 Say that the full decision context is now persisted as agent memory.
 
-## 2:00-2:35
+## 2:30-2:45
 
 Click Record on 0G Chain. Show:
 
@@ -39,7 +43,7 @@ Click Record on 0G Chain. Show:
 - Ledger transaction hash
 - Chain explorer link
 
-## 2:35-3:00
+## 2:45-3:00
 
 Close with:
 
